@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dwca-translator-service
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: dwca-translator-service
+          image: public.ecr.aws/dissco/dissco-core-translator
+          resources:
+            requests:
+              memory: 512M
+            limits:
+              memory: 512M
+          env:
+            - name: webclient.sourceSystemId
+              value: 20.5000.1025/GW0-ADE-EWQ
+            - name: dwca.download-file
+              value: /temp/darwin.zip
+            - name: dwca.temp-folder
+              value: /temp/darwin
+            - name: kafka.host
+              value: kafka.kafka.svc.cluster.local:9092
+            - name: kafka.topic
+              value: digital-specimen
+            - name: spring.datasource.url
+              value: jdbc:postgresql://database-1.cbppwfnjypll.eu-west-2.rds.amazonaws.com/dissco
+            - name: spring.datasource.username
+              valueFrom:
+                secretKeyRef:
+                  name: db-user-pass
+                  key: username
+            - name: spring.datasource.password
+              valueFrom:
+                secretKeyRef:
+                  name: db-user-pass
+                  key: password
+            - name: ENRICHMENT_LIST_0_NAME
+              value: plant-organ-detection
+            - name: ENRICHMENT_LIST_0_IMAGE_ONLY
+              value: 'true'
+            - name: JAVA_OPTS
+              value: -server -XX:+useContainerSupport -XX:MaxRAMPercentage=75 --illegal-access=deny
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - mountPath: /temp
+              name: temp-volume
+      volumes:
+        - name: temp-volume
+          emptyDir: { }

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Slf4j
 @Controller
-@RequestMapping("/dissco")
+@RequestMapping("/")
 @RequiredArgsConstructor
 public class EventDrivenController {
 
