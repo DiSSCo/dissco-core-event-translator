@@ -9,11 +9,11 @@ import eu.dissco.eventdriventranslator.domain.DigitalSpecimen;
 import eu.dissco.eventdriventranslator.domain.DigitalSpecimenEvent;
 import eu.dissco.eventdriventranslator.domain.EventType;
 import eu.dissco.eventdriventranslator.domain.Mapping;
+import eu.dissco.eventdriventranslator.repository.MappingRepository;
 import io.cloudevents.CloudEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,22 +24,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EventTranslatorService {
 
-  private static final String UNIT_GUID = "unitGUID";
-  private static final String ID = "id";
-  private static final String SCIENTIFIC_NAME = "scientificName";
-  private static final String IDENTIFICATIONS = "identifications";
-  private static final String FULL_SCIENTIFIC_NAME = "fullScientificName";
-  private static final String ASSOCIATED_MULTI_MEDIA_URIS = "associatedMultiMediaUris";
-  private static final String RECORD_BASIS = "recordBasis";
-  private static final String OWNER = "owner";
-  private static final List<String> MAPPED_TERMS = List.of(ID, UNIT_GUID, FULL_SCIENTIFIC_NAME,
-      RECORD_BASIS, OWNER);
-
   private final ObjectMapper mapper;
   private final KafkaService kafkaService;
   private final SpecimenClient specimenClient;
-  private final MappingService mappingService;
-
+  private final MappingRepository mappingRepository;
 
   public JsonNode getCapabilities() {
     ObjectNode dissco = mapper.createObjectNode();
@@ -76,7 +64,8 @@ public class EventTranslatorService {
   }
 
   private void processData(URI source, JsonNode data) throws JsonProcessingException {
-    var mapping = mappingService.retrieveMapping(source.toString());
+    var endpointInformation = mappingRepository.retrieveEndpointInformation(source.toString());
+    var mapping = endpointInformation.mapping();
     var organizationId = getProperty("organization_id", data, mapping);
     var physicalSpecimenIdType = getProperty("physical_specimen_id_type", data, mapping);
     var digitalSpecimen = new DigitalSpecimen(
@@ -87,7 +76,7 @@ public class EventTranslatorService {
         organizationId,
         getProperty("dataset_id", data, mapping),
         getProperty("physical_specimen_collection", data, mapping),
-        source.toString(),
+        endpointInformation.sourceSystemId(),
         data,
         data,
         null);
