@@ -102,9 +102,15 @@ public class EventTranslatorService {
     if (mapping.defaultMapping().containsKey(fieldName)) {
       return mapping.defaultMapping().get(fieldName);
     } else if (mapping.fieldMapping().containsKey(fieldName)) {
-      return data.findValue(mapping.fieldMapping().get(fieldName)).asText();
+      var values = data.findValuesAsText(mapping.fieldMapping().get(fieldName));
+      if (!values.isEmpty()) {
+        return values.get(0);
+      } else {
+        log.warn("No values found for field: {}", fieldName);
+        return null;
+      }
     } else {
-      log.warn("Cannot find property {}", fieldName);
+      log.warn("Cannot find field {}", fieldName);
       return null;
     }
   }
