@@ -13,7 +13,9 @@ import eu.dissco.eventdriventranslator.repository.MappingRepository;
 import io.cloudevents.CloudEvent;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,10 +83,19 @@ public class EventTranslatorService {
         data,
         null);
     log.info("Digital Specimen: {}", digitalSpecimen);
-    var event = new DigitalSpecimenEvent(Collections.emptyList(),
+    var event = new DigitalSpecimenEvent(extractEnrichment(data),
         digitalSpecimen);
     log.info("Publishing digital specimen event: {}", event);
     kafkaService.sendMessage("digital-specimen", mapper.writeValueAsString(event));
+  }
+
+  private List<String> extractEnrichment(JsonNode data) {
+    var enrichmentList = new ArrayList<String>();
+    var enrichments =  data.get("enrichmentList");
+    if (enrichments != null && enrichments.isArray()){
+      enrichments.forEach(enrichment -> enrichmentList.add(enrichment.asText()));
+    }
+    return enrichmentList;
   }
 
   private String getProperty(String fieldName, JsonNode data, Mapping mapping) {
